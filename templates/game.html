@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <a href="{{ url_for('reset_game') }}" class="btn btn-danger">← Exit Game</a>
+    <div class="lives">
+        <span class="heart">❤️</span>Lives: {{ lives }}
+    </div>
+    <button class="btn btn-primary" onclick="toggleFullscreen()">Full Screen</button>
+</div>
+
+<div class="game-info">
+    <div class="category-info">Category: {{ category }}</div>
+    {% if hangman_stage %}
+    <div class="hangman-display">Wrong guesses: {{ wrong_guesses }}/6</div>
+    {% endif %}
+</div>
+
+<div class="word-display">
+    <div class="word-letters">
+        {% for letter in display_word %}
+            {{ letter }}
+        {% endfor %}
+    </div>
+</div>
+
+{% if game_won %}
+<div class="game-status">
+    <div class="win-message">🎉 Congratulations! You Won! 🎉</div>
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('reset_game') }}" class="btn btn-success">Play Again</a>
+    </div>
+</div>
+{% elif game_over %}
+<div class="game-status">
+    <div class="lose-message">💀 Game Over! The word was: {{ word }} 💀</div>
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('reset_game') }}" class="btn btn-success">Play Again</a>
+    </div>
+</div>
+{% else %}
+<form method="POST" action="/guess">
+    <div class="alphabet">
+        {% for letter in alphabet[:13] %}
+        <button type="submit" name="letter" value="{{ letter }}"
+                class="letter-btn {% if letter in guessed_letters %}{% if letter in word %}correct{% else %}incorrect{% endif %}{% endif %}"
+                {% if letter in guessed_letters %}disabled{% endif %}>
+            {{ letter }}
+        </button>
+        {% endfor %}
+    </div>
+    <div class="alphabet alphabet-row-2">
+        {% for letter in alphabet[13:] %}
+        <button type="submit" name="letter" value="{{ letter }}"
+                class="letter-btn {% if letter in guessed_letters %}{% if letter in word %}correct{% else %}incorrect{% endif %}{% endif %}"
+                {% if letter in guessed_letters %}disabled{% endif %}>
+            {{ letter }}
+        </button>
+        {% endfor %}
+    </div>
+</form>
+{% endif %}
+
+<script>
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
+</script>
+{% endblock %}

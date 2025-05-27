@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="category-selection">
+    <h1 style="text-align: center; margin-bottom: 40px; color: #333; font-size: 36px;">🎯 Hangman Game</h1>
+    
+    <h2 style="color: #666; margin-bottom: 30px;">Choose a Category:</h2>
+    
+    <form method="POST" action="/start_game">
+        <div class="category-grid">
+            {% for category in categories %}
+            <div class="category-card" onclick="selectCategory('{{ category }}')">
+                <div class="category-title">{{ category.title() }}</div>
+                <div style="color: #666;">Click to play</div>
+            </div>
+            {% endfor %}
+        </div>
+        <input type="hidden" name="category" id="selected-category">
+    </form>
+</div>
+
+<script>
+function selectCategory(category) {
+    document.getElementById('selected-category').value = category;
+    document.querySelector('form').submit();
+}
+</script>
+{% endblock %}
