@@ -46,7 +46,7 @@ def start_game():
     session['category'] = category
     session['guessed_letters'] = []
     session['wrong_guesses'] = 0
-    session['lives'] = 10
+    session['lives'] = 6
     session['game_over'] = False
     session['game_won'] = False
 
