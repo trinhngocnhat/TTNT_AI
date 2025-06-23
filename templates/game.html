@@ -13,6 +13,16 @@
     <div class="category-info">Category: {{ category }}</div>
     {% if hangman_stage %}
     <div class="category-info">Từ gợi ý</div>
+    <!-- AI Predictions -->
+{% if ai_predictions %}
+<div class="ai-prediction" style="margin: 10px 0; font-weight: bold;">
+    <ul style="list-style-type: none; padding-left: 0;">
+        {% for word, prob in ai_predictions %}
+        <li>🤖 {{ word }} ({{ prob }})</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
     <div class="hangman-display">Wrong guesses: {{ wrong_guesses }}/6</div>
     {% endif %}
 </div>

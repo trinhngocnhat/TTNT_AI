@@ -1,11 +1,17 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import random
 import os
+import pickle
+import numpy as np
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
-# Word categories
+# Load AI model and vectorizer
+with open('hangman_model.pkl', 'rb') as f:
+    model, vectorizer = pickle.load(f)
+
+# Categories
 WORD_CATEGORIES = {
     'animals': ['ELEPHANT', 'GIRAFFE', 'PENGUIN', 'DOLPHIN', 'BUTTERFLY', 'KANGAROO', 'OCTOPUS', 'RHINOCEROS'],
     'countries': ['AUSTRALIA', 'CANADA', 'BRAZIL', 'FRANCE', 'JAPAN', 'GERMANY', 'ITALY', 'MEXICO'],
@@ -16,31 +22,38 @@ WORD_CATEGORIES = {
     'movies': ['ADVENTURE', 'COMEDY', 'THRILLER', 'ROMANCE', 'MYSTERY', 'FANTASY', 'DOCUMENTARY', 'ANIMATION']
 }
 
-
+# Hangman stages
 def get_hangman_stages():
     return [
         '',  # 0 wrong guesses
-        'Head',  # 1 wrong guess
-        'Head + Body',  # 2 wrong guesses
-        'Head + Body + Left Arm',  # 3 wrong guesses
-        'Head + Body + Both Arms',  # 4 wrong guesses
-        'Head + Body + Both Arms + Left Leg',  # 5 wrong guesses
-        'Head + Body + Both Arms + Both Legs'  # 6 wrong guesses (game over)
+        'Head',
+        'Head + Body',
+        'Head + Body + Left Arm',
+        'Head + Body + Both Arms',
+        'Head + Body + Both Arms + Left Leg',
+        'Head + Body + Both Arms + Both Legs'
     ]
 
+# AI Prediction function
+def predict_word_ai(masked_word, wrong_letters, top_k=3):
+    input_str = masked_word + '|' + ''.join(sorted(wrong_letters))
+    X_test = vectorizer.transform([input_str])
+    probs = model.predict_proba(X_test)[0]
+    top_indices = np.argsort(probs)[::-1][:top_k]
+    return [(model.classes_[i], round(probs[i], 4)) for i in top_indices]
 
+# Home page
 @app.route('/')
 def index():
     return render_template('index.html', categories=WORD_CATEGORIES.keys())
 
-
+# Start a new game
 @app.route('/start_game', methods=['POST'])
 def start_game():
     category = request.form.get('category')
     if category not in WORD_CATEGORIES:
         return redirect(url_for('index'))
 
-    # Initialize game session
     word = random.choice(WORD_CATEGORIES[category])
     session['word'] = word
     session['category'] = category
@@ -52,7 +65,7 @@ def start_game():
 
     return redirect(url_for('game'))
 
-
+# Game screen
 @app.route('/game')
 def game():
     if 'word' not in session:
@@ -61,12 +74,12 @@ def game():
     word = session['word']
     guessed_letters = session.get('guessed_letters', [])
     wrong_guesses = session.get('wrong_guesses', 0)
-    lives = session.get('lives', 10)
+    lives = session.get('lives', 6)
     game_over = session.get('game_over', False)
     game_won = session.get('game_won', False)
     category = session.get('category', '')
 
-    # Create display word with guessed letters
+    # Create masked word for player
     display_word = []
     for letter in word:
         if letter in guessed_letters:
@@ -74,7 +87,12 @@ def game():
         else:
             display_word.append('_')
 
-    # Create alphabet for buttons
+    # Prepare input for AI
+    masked_word_str = ''.join(display_word)
+    wrong_letters = [l for l in guessed_letters if l not in word]
+    ai_predictions = predict_word_ai(masked_word_str, wrong_letters)
+
+    # Alphabet for guessing
     alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
     return render_template('game.html',
@@ -87,9 +105,10 @@ def game():
                            game_over=game_over,
                            game_won=game_won,
                            category=category.title(),
-                           hangman_stage=get_hangman_stages()[min(wrong_guesses, 6)])
+                           hangman_stage=get_hangman_stages()[min(wrong_guesses, 6)],
+                           ai_predictions=ai_predictions)
 
-
+# Process letter guess
 @app.route('/guess', methods=['POST'])
 def guess():
     if 'word' not in session or session.get('game_over'):
@@ -110,25 +129,25 @@ def guess():
 
     if letter not in word:
         session['wrong_guesses'] = session.get('wrong_guesses', 0) + 1
-        session['lives'] = session.get('lives', 10) - 1
+        session['lives'] = session.get('lives', 6) - 1
 
-    # Check win condition
-    if all(letter in guessed_letters for letter in word):
+    # Win condition
+    if all(l in guessed_letters for l in word):
         session['game_won'] = True
         session['game_over'] = True
 
-    # Check lose condition
+    # Lose condition
     if session.get('wrong_guesses', 0) >= 6:
         session['game_over'] = True
 
     return redirect(url_for('game'))
 
-
+# Reset game
 @app.route('/reset_game')
 def reset_game():
     session.clear()
     return redirect(url_for('index'))
 
-
+# Run server
 if __name__ == '__main__':
     app.run(debug=True)
