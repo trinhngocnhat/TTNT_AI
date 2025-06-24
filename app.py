@@ -1,11 +1,10 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import random
-import os
 import pickle
 import numpy as np
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'
+
 
 # Load AI model and vectorizer
 with open('hangman_model.pkl', 'rb') as f:
@@ -33,7 +32,6 @@ def get_hangman_stages():
         'Head + Body + Both Arms + Left Leg',
         'Head + Body + Both Arms + Both Legs'
     ]
-
 # AI Prediction function
 def predict_word_ai(masked_word, wrong_letters, category, top_k=3):
     input_str = masked_word + '|' + ''.join(sorted(wrong_letters))
