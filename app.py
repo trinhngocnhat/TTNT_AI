@@ -35,12 +35,32 @@ def get_hangman_stages():
     ]
 
 # AI Prediction function
-def predict_word_ai(masked_word, wrong_letters, top_k=3):
+def predict_word_ai(masked_word, wrong_letters, category, top_k=3):
     input_str = masked_word + '|' + ''.join(sorted(wrong_letters))
     X_test = vectorizer.transform([input_str])
     probs = model.predict_proba(X_test)[0]
-    top_indices = np.argsort(probs)[::-1][:top_k]
-    return [(model.classes_[i], round(probs[i], 4)) for i in top_indices]
+    class_labels = model.classes_
+
+    # Get top predictions by probability
+    top_indices = np.argsort(probs)[::-1]
+
+    # Words allowed for this category
+    allowed_words = set(WORD_CATEGORIES.get(category.lower(), []))
+
+    # Filter out predictions:
+    # - That contain any wrong letters
+    # - That are not in the selected category
+    results = []
+    for idx in top_indices:
+        word = class_labels[idx]
+        if (word in allowed_words) and all(letter not in word for letter in wrong_letters):
+            results.append((word, round(probs[idx], 4)))
+        if len(results) >= top_k:
+            break
+
+    return results
+
+
 
 # Home page
 @app.route('/')
@@ -90,7 +110,7 @@ def game():
     # Prepare input for AI
     masked_word_str = ''.join(display_word)
     wrong_letters = [l for l in guessed_letters if l not in word]
-    ai_predictions = predict_word_ai(masked_word_str, wrong_letters)
+    ai_predictions = predict_word_ai(masked_word_str, wrong_letters, category.lower())
 
     # Alphabet for guessing
     alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'

@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="header">
-    <a href="{{ url_for('reset_game') }}" class="btn btn-danger">← Thoát</a>
+    <a href="{{ url_for('reset_game') }}" class="btn btn-danger">← Exit</a>
     <div class="lives">
         <span class="heart">❤️</span>Lives: {{ lives }}
     </div>
@@ -12,7 +12,7 @@
 <div class="game-info">
     <div class="category-info">Category: {{ category }}</div>
     {% if hangman_stage %}
-    <div class="category-info">Từ gợi ý</div>
+    <div class="category-info">Suggestion</div>
     <!-- AI Predictions -->
 {% if ai_predictions %}
 <div class="ai-prediction" style="margin: 10px 0; font-weight: bold;">
