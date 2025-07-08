@@ -4,6 +4,7 @@ import pickle
 import numpy as np
 
 app = Flask(__name__)
+app.secret_key = 'your-secret-key-here'
 
 
 # Load AI model and vectorizer
